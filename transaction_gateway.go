@@ -42,24 +42,6 @@ func (g *TransactionGateway) SubmitForSettlement(id string, amount ...*Decimal) 
 	return nil, &invalidResponseError{resp}
 }
 
-// Settle settles a transaction.
-// This action is only available in the sandbox environment.
-func (g *TransactionGateway) Settle(id string) (*Transaction, error) {
-	if g.Environment != Production {
-		resp, err := g.execute("PUT", "transactions/"+id+"/settle", nil)
-		if err != nil {
-			return nil, err
-		}
-		switch resp.StatusCode {
-		case 200:
-			return resp.transaction()
-		}
-		return nil, &invalidResponseError{resp}
-	} else {
-		return nil, &testOperationPerformedInProductionError{}
-	}
-}
-
 // Void voids the transaction with the specified id if it has a status of authorized or
 // submitted_for_settlement. When the transaction is voided Braintree will do an authorization
 // reversal if possible so that the customer won’t have a pending charge on their card
@@ -123,6 +105,43 @@ func (g *TransactionGateway) Search(query *SearchQuery) (*TransactionSearchResul
 		return nil, err
 	}
 	return &v, err
+}
+
+// Following methods are only available in Sandbox.
+// Settle settles a transaction.
+func (g *TransactionGateway) Settle(id string) (*Transaction, error) {
+	return g.setStatus(id, "settle")
+}
+
+// Confirms a settlement.
+func (g *TransactionGateway) SettlementConfirm(id string) (*Transaction, error) {
+	return g.setStatus(id, "settlement_confirm")
+}
+
+// Declined a settlements.
+func (g *TransactionGateway) SettlementDecline(id string) (*Transaction, error) {
+	return g.setStatus(id, "settlement_decline")
+}
+
+// Declined a settlements.
+func (g *TransactionGateway) SettlementPending(id string) (*Transaction, error) {
+	return g.setStatus(id, "settlement_pending")
+}
+
+func (g *TransactionGateway) setStatus(id, status string) (*Transaction, error) {
+	if g.Environment != Production {
+		resp, err := g.execute("PUT", "transactions/"+id+"/" + status, nil)
+		if err != nil {
+			return nil, err
+		}
+		switch resp.StatusCode {
+		case 200:
+			return resp.transaction()
+		}
+		return nil, &invalidResponseError{resp}
+	} else {
+		return nil, &testOperationPerformedInProductionError{}
+	}
 }
 
 type testOperationPerformedInProductionError struct {

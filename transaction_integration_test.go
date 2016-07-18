@@ -343,6 +343,126 @@ func TestSettleTransaction(t *testing.T) {
 	}
 }
 
+func TestSettlementConfirmTransaction(t *testing.T) {
+	old_environment := testGateway.Environment
+
+	txn, err := testGateway.Transaction().Create(&Transaction{
+		Type:   "sale",
+		Amount: randomAmount(),
+		CreditCard: &CreditCard{
+			Number:         testCreditCards["visa"].Number,
+			ExpirationDate: "05/14",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txn, err = testGateway.Transaction().SubmitForSettlement(txn.Id, txn.Amount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testGateway.Environment = Production
+
+	_, err = testGateway.Transaction().SettlementConfirm(txn.Id)
+	if err.Error() != "Operation not allowed in production environment" {
+		t.Log(testGateway.Environment)
+		t.Fatal(err)
+	}
+
+	testGateway.Environment = old_environment
+
+	txn, err = testGateway.Transaction().SettlementConfirm(txn.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if txn.Status != "settlement_confirmed" {
+		t.Fatal(txn.Status)
+	}
+}
+
+func TestSettlementDeclinedTransaction(t *testing.T) {
+	old_environment := testGateway.Environment
+
+	txn, err := testGateway.Transaction().Create(&Transaction{
+		Type:   "sale",
+		Amount: randomAmount(),
+		CreditCard: &CreditCard{
+			Number:         testCreditCards["visa"].Number,
+			ExpirationDate: "05/14",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txn, err = testGateway.Transaction().SubmitForSettlement(txn.Id, txn.Amount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testGateway.Environment = Production
+
+	_, err = testGateway.Transaction().SettlementDecline(txn.Id)
+	if err.Error() != "Operation not allowed in production environment" {
+		t.Log(testGateway.Environment)
+		t.Fatal(err)
+	}
+
+	testGateway.Environment = old_environment
+
+	txn, err = testGateway.Transaction().SettlementDecline(txn.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if txn.Status != "settlement_declined" {
+		t.Fatal(txn.Status)
+	}
+}
+
+func TestSettlementPendingTransaction(t *testing.T) {
+	old_environment := testGateway.Environment
+
+	txn, err := testGateway.Transaction().Create(&Transaction{
+		Type:   "sale",
+		Amount: randomAmount(),
+		CreditCard: &CreditCard{
+			Number:         testCreditCards["visa"].Number,
+			ExpirationDate: "05/14",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txn, err = testGateway.Transaction().SubmitForSettlement(txn.Id, txn.Amount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testGateway.Environment = Production
+
+	_, err = testGateway.Transaction().SettlementPending(txn.Id)
+	if err.Error() != "Operation not allowed in production environment" {
+		t.Log(testGateway.Environment)
+		t.Fatal(err)
+	}
+
+	testGateway.Environment = old_environment
+
+	txn, err = testGateway.Transaction().SettlementPending(txn.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if txn.Status != "settlement_pending" {
+		t.Fatal(txn.Status)
+	}
+}
+
 func TestTrxPaymentMethodNonce(t *testing.T) {
 	txn, err := testGateway.Transaction().Create(&Transaction{
 		Type:               "sale",
